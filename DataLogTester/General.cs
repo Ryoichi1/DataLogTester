@@ -219,46 +219,30 @@ namespace DataLogTester
             try
             {
                 var 工番 = testData[0];
+
+                var OkDataFilePath = Constants.TestDataPath + 工番 + ".csv";
+
                 //既存検査データ（同じ工番名のファイル）が存在するかどうかチェックする
-                if (!System.IO.File.Exists(Constants.TestDataPath + 工番 + ".ods"))
+                if (!System.IO.File.Exists(OkDataFilePath))
                 {
                     //既存検査データがなければ新規作成
-                    File.Copy(Constants.TestDataPath + "format.ods", Constants.TestDataPath + 工番 + ".ods");
+                    File.Copy(Constants.TestDataPath + "format.csv", OkDataFilePath);
                 }
 
-                string filepath = Constants.TestDataPath + 工番 + ".ods";
 
-                OpenOffice calc = new OpenOffice();
-                //parameterファイルを開く
-                calc.OpenFile(filepath);
+                // リストデータをすべてカンマ区切りで連結する
+                string stCsvData = string.Join(",", testData);
 
+                // appendをtrueにすると，既存のファイルに追記
+                //         falseにすると，ファイルを新規作成する
+                var append = true;
 
-                // sheetを取得
-                calc.SelectSheet("Sheet1");
-
-                //使用されているセルの最終行を検索する
-                int i = 0;
-                string cellString;
-                while (true)
+                // 出力用のファイルを開く
+                using (var sw = new System.IO.StreamWriter(OkDataFilePath, append, Encoding.GetEncoding("Shift_JIS")))
                 {
-                    Application.DoEvents();
-                    calc.cell = calc.sheet.getCellByPosition(0, i);
-                    cellString = calc.cell.getFormula();
-                    if (cellString == "") break;
-                    i++;
+                    sw.WriteLine(stCsvData);
                 }
 
-                int newRow = i;
-                int j = 0;
-                foreach(var data in testData)
-                {
-                    calc.cell = calc.sheet.getCellByPosition(j, newRow);
-                    calc.cell.setFormula(data);
-                    j++;
-                }
-
-                // Calcファイルを保存して閉じる
-                if (!calc.SaveFile()) return false;
 
                 return true;
 

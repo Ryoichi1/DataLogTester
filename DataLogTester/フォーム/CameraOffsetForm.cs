@@ -13,7 +13,7 @@ namespace DataLogTester
 {
     public partial class CameraOffsetForm : Form
     {
-       
+
         private bool gbolFlgC;  //クロスカーソル表示ON/OFF
         private int intXC;      //クロスカーソルの表示位置
         private int intYC;
@@ -39,11 +39,11 @@ namespace DataLogTester
 
         public CameraOffsetForm()
         {
-            
+
             InitializeComponent();
-            
+
             //
-            
+
             labelMessage.Text = null;
 
             // FileStream を開く
@@ -57,12 +57,12 @@ namespace DataLogTester
 
             intW = pictureBox1.Width;
             intH = pictureBox1.Height;
-            
+
             bitm = new Bitmap(pictureBox1.Image);
             gbolFlgC = false;     //クロスカーソル非表示
 
         }
-        
+
         //フォームロード時の処理
         private void CameraOffsetForm_Load(object sender, EventArgs e)
         {
@@ -75,7 +75,7 @@ namespace DataLogTester
 
         }
 
-        
+
         //クロスカーソルの表示
         // x,y:クロスカーソルの表示位置
         // flg:クロスカーソルを表示（true）／消す（false）
@@ -86,19 +86,19 @@ namespace DataLogTester
             {
                 fncPicelXor(x + i, y, flg);
             }
-            
+
             for (int i = 1; i < 11; i++)
             {
                 fncPicelXor(x - i, y, flg);
-            }            
-            
-            
+            }
+
+
             for (int i = 0; i < 11; i++)
             {
                 fncPicelXor(x, y + i, flg);
             }
-            
-             for (int i = 0; i < 11; i++)
+
+            for (int i = 0; i < 11; i++)
             {
                 fncPicelXor(x, y - i, flg);
             }
@@ -139,7 +139,7 @@ namespace DataLogTester
 
         private void buttonOffset_Click(object sender, EventArgs e)
         {
-            
+
             //LED座標の調整は左上（RX1）→右下（SD_DO1）に向かって順に行う
 
             //*************************************************
@@ -303,8 +303,8 @@ namespace DataLogTester
             textBoxCpuY.Text = buffy;
             textBoxCpuX.BackColor = Color.White;
             textBoxCpuY.BackColor = Color.White;
-            
-           
+
+
             //*************************************************
             buffx = null;
             buffy = null;
@@ -762,52 +762,24 @@ namespace DataLogTester
             buttonSave.Enabled = false;
             groupBox2.Enabled = false;
 
-            string[] Xpoint = new string[]
-            {
-                textBoxRx1X.Text,textBoxRx2X.Text,textBoxRx3X.Text,textBoxRx4X.Text,
-                textBoxTx1X.Text,textBoxTx2X.Text,textBoxTx3X.Text,textBoxTx4X.Text,
-                textBoxVccX.Text,textBoxRunX.Text,textBoxCpuX.Text,textBoxSdDiX.Text,textBoxSdDoX.Text
-            };
-            string[] Ypoint = new string[]
-            {
-                textBoxRx1Y.Text,textBoxRx2Y.Text,textBoxRx3Y.Text,textBoxRx4Y.Text,
-                textBoxTx1Y.Text,textBoxTx2Y.Text,textBoxTx3Y.Text,textBoxTx4Y.Text,
-                textBoxVccY.Text,textBoxRunY.Text,textBoxCpuY.Text,textBoxSdDiY.Text,textBoxSdDoY.Text
-            };
-
-            //パラメータファイルに更新したLED座標データを保存する
-
             try
             {
 
-                OpenOffice calc = new OpenOffice();
-                //parameterファイルを開く
-                calc.OpenFile(Constants.ParameterFilePath);
+                State.cam0Prop.TX1 = textBoxTx1X.Text + "," + textBoxTx1Y.Text;
+                State.cam0Prop.TX2 = textBoxTx2X.Text + "," + textBoxTx2Y.Text;
+                State.cam0Prop.TX3 = textBoxTx3X.Text + "," + textBoxTx3Y.Text;
+                State.cam0Prop.TX4 = textBoxTx4X.Text + "," + textBoxTx4Y.Text;
 
-                // sheetを取得
-                calc.SelectSheet("LedPoint");
+                State.cam0Prop.RX1 = textBoxRx1X.Text + "," + textBoxRx1Y.Text;
+                State.cam0Prop.RX2 = textBoxRx2X.Text + "," + textBoxRx2Y.Text;
+                State.cam0Prop.RX3 = textBoxRx3X.Text + "," + textBoxRx3Y.Text;
+                State.cam0Prop.RX4 = textBoxRx4X.Text + "," + textBoxRx4Y.Text;
 
-               
-                int i = 0; //カウンタ初期化
-                foreach(string point in Xpoint) //X座標
-                {
-                    calc.cell = calc.sheet.getCellByPosition(1, 1 + i);
-                    calc.cell.setFormula(point);
-                    i++;
-                }
-                i = 0; //カウンタ初期化
-                foreach(string point in Ypoint) //Y座標
-                {
-                    calc.cell = calc.sheet.getCellByPosition(2, 1 + i);
-                    calc.cell.setFormula(point);
-                    i++;
-                }
-
-                // Calcファイルを保存して閉じる
-                if (!calc.SaveFile())
-                {
-                    MessageBox.Show("LED座標データの保存に失敗しました");
-                }
+                State.cam0Prop.VCC = textBoxVccX.Text + "," + textBoxVccY.Text;
+                State.cam0Prop.RUN = textBoxRunX.Text + "," + textBoxRunY.Text;
+                State.cam0Prop.CPU = textBoxCpuX.Text + "," + textBoxCpuY.Text;
+                State.cam0Prop.SD_DI = textBoxSdDiX.Text + "," + textBoxSdDiY.Text;
+                State.cam0Prop.SD_DO = textBoxSdDoX.Text + "," + textBoxSdDoY.Text;
 
                 MessageBox.Show("LED座標データが保存されました");
 
@@ -819,7 +791,7 @@ namespace DataLogTester
 
             this.Close();
         }
-        
+
         private void pictureBox1_MouseLeave(object sender, EventArgs e)
         {
             if (gbolFlgC == true)
@@ -856,69 +828,51 @@ namespace DataLogTester
             //pictureBox1.Refresh();  //途中表示
         }
 
+        private static Point makePoint(string data)
+        {
+
+            var pointArr = data.Split(',').ToArray();
+            int x = Int32.Parse(pointArr[0]);
+            int y = Int32.Parse(pointArr[1]);
+            return new Point(x, y);
+
+        }
+
         private void SetLedPoint()
         {
 
-            //Rx1_X = Int32.Parse(parentForm.parameterLedPoint[0]);
-            //Rx1_Y = Int32.Parse(parentForm.parameterLedPoint[1]);
-            //Rx2_X = Int32.Parse(parentForm.parameterLedPoint[2]);
-            //Rx2_Y = Int32.Parse(parentForm.parameterLedPoint[3]);
-            //Rx3_X = Int32.Parse(parentForm.parameterLedPoint[4]);
-            //Rx3_Y = Int32.Parse(parentForm.parameterLedPoint[5]);
-            //Rx4_X = Int32.Parse(parentForm.parameterLedPoint[6]);
-            //Rx4_Y = Int32.Parse(parentForm.parameterLedPoint[7]);
-            
-            //Tx1_X = Int32.Parse(parentForm.parameterLedPoint[8]);
-            //Tx1_Y = Int32.Parse(parentForm.parameterLedPoint[9]);
-            //Tx2_X = Int32.Parse(parentForm.parameterLedPoint[10]);
-            //Tx2_Y = Int32.Parse(parentForm.parameterLedPoint[11]);
-            //Tx3_X = Int32.Parse(parentForm.parameterLedPoint[12]);
-            //Tx3_Y = Int32.Parse(parentForm.parameterLedPoint[13]);
-            //Tx4_X = Int32.Parse(parentForm.parameterLedPoint[14]);
-            //Tx4_Y = Int32.Parse(parentForm.parameterLedPoint[15]);
-            
-            //Vcc_X = Int32.Parse(parentForm.parameterLedPoint[16]);
-            //Vcc_Y = Int32.Parse(parentForm.parameterLedPoint[17]);
-            //Run_X = Int32.Parse(parentForm.parameterLedPoint[18]);
-            //Run_Y = Int32.Parse(parentForm.parameterLedPoint[19]);
-            //Cpu_X = Int32.Parse(parentForm.parameterLedPoint[20]);
-            //Cpu_Y = Int32.Parse(parentForm.parameterLedPoint[21]);
-            //SdDi_X = Int32.Parse(parentForm.parameterLedPoint[22]);
-            //SdDi_Y = Int32.Parse(parentForm.parameterLedPoint[23]);
-            //SdDo_X = Int32.Parse(parentForm.parameterLedPoint[24]);
-            //SdDo_Y = Int32.Parse(parentForm.parameterLedPoint[25]);
+            textBoxRx1X.Text = makePoint(State.cam0Prop.RX1).X.ToString();
+            textBoxRx1Y.Text = makePoint(State.cam0Prop.RX1).Y.ToString();
+            textBoxRx2X.Text = makePoint(State.cam0Prop.RX2).X.ToString();
+            textBoxRx2Y.Text = makePoint(State.cam0Prop.RX2).Y.ToString();
+            textBoxRx3X.Text = makePoint(State.cam0Prop.RX3).X.ToString();
+            textBoxRx3Y.Text = makePoint(State.cam0Prop.RX3).Y.ToString();
+            textBoxRx4X.Text = makePoint(State.cam0Prop.RX4).X.ToString();
+            textBoxRx4Y.Text = makePoint(State.cam0Prop.RX4).Y.ToString();
 
-            textBoxRx1X.Text = State.Rx1_X.ToString();
-            textBoxRx1Y.Text = State.Rx1_Y.ToString();
-            textBoxRx2X.Text = State.Rx2_X.ToString();
-            textBoxRx2Y.Text = State.Rx2_Y.ToString();
-            textBoxRx3X.Text = State.Rx3_X.ToString();
-            textBoxRx3Y.Text = State.Rx3_Y.ToString();
-            textBoxRx4X.Text = State.Rx4_X.ToString();
-            textBoxRx4Y.Text = State.Rx4_Y.ToString();
+            textBoxTx1X.Text = makePoint(State.cam0Prop.TX1).X.ToString();
+            textBoxTx1Y.Text = makePoint(State.cam0Prop.TX1).Y.ToString();
+            textBoxTx2X.Text = makePoint(State.cam0Prop.TX2).X.ToString();
+            textBoxTx2Y.Text = makePoint(State.cam0Prop.TX2).Y.ToString();
+            textBoxTx3X.Text = makePoint(State.cam0Prop.TX3).X.ToString();
+            textBoxTx3Y.Text = makePoint(State.cam0Prop.TX3).Y.ToString();
+            textBoxTx4X.Text = makePoint(State.cam0Prop.TX4).X.ToString();
+            textBoxTx4Y.Text = makePoint(State.cam0Prop.TX4).Y.ToString();
 
-            textBoxTx1X.Text = State.Tx1_X.ToString();
-            textBoxTx1Y.Text = State.Tx1_Y.ToString();
-            textBoxTx2X.Text = State.Tx2_X.ToString();
-            textBoxTx2Y.Text = State.Tx2_Y.ToString();
-            textBoxTx3X.Text = State.Tx3_X.ToString();
-            textBoxTx3Y.Text = State.Tx3_Y.ToString();
-            textBoxTx4X.Text = State.Tx4_X.ToString();
-            textBoxTx4Y.Text = State.Tx4_Y.ToString();
+            textBoxVccX.Text = makePoint(State.cam0Prop.VCC).X.ToString();
+            textBoxVccY.Text = makePoint(State.cam0Prop.VCC).Y.ToString();
 
-            textBoxVccX.Text = State.Vcc_X.ToString();
-            textBoxVccY.Text = State.Vcc_Y.ToString();
+            textBoxRunX.Text = makePoint(State.cam0Prop.RUN).X.ToString();
+            textBoxRunY.Text = makePoint(State.cam0Prop.RUN).Y.ToString();
 
-            textBoxRunX.Text = State.Run_X.ToString();
-            textBoxRunY.Text = State.Run_Y.ToString();
+            textBoxCpuX.Text = makePoint(State.cam0Prop.CPU).X.ToString();
+            textBoxCpuY.Text = makePoint(State.cam0Prop.CPU).Y.ToString();
 
-            textBoxCpuX.Text = State.Cpu_X.ToString();
-            textBoxCpuY.Text = State.Cpu_Y.ToString();
+            textBoxSdDiX.Text = makePoint(State.cam0Prop.SD_DI).X.ToString();
+            textBoxSdDiY.Text = makePoint(State.cam0Prop.SD_DI).Y.ToString();
 
-            textBoxSdDiX.Text = State.Di_X.ToString();
-            textBoxSdDiY.Text = State.Di_Y.ToString();
-            textBoxSdDoX.Text = State.Do_X.ToString();
-            textBoxSdDoY.Text = State.Do_Y.ToString();
+            textBoxSdDoX.Text = makePoint(State.cam0Prop.SD_DO).X.ToString();
+            textBoxSdDoY.Text = makePoint(State.cam0Prop.SD_DO).Y.ToString();
 
 
         }
@@ -1547,7 +1501,7 @@ namespace DataLogTester
                 //前回のクロスカーソルを消す
                 CrossCursor(intXC, intYC, false);
 
-                
+
                 textBoxSdDiX.Text = (Int32.Parse(textBoxSdDiX.Text) - 1).ToString();
                 gbolFlgC = true;  //クロスカーソルを表示
                 intXC = Int32.Parse(textBoxSdDiX.Text);
@@ -1849,7 +1803,7 @@ namespace DataLogTester
                 intYC = Int32.Parse(textBoxRx4Y.Text);
             }
 
-            if(radioButtonVcc1.Checked)
+            if (radioButtonVcc1.Checked)
             {
                 intXC = Int32.Parse(textBoxVccX.Text);
                 intYC = Int32.Parse(textBoxVccY.Text);

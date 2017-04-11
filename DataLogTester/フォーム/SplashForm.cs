@@ -20,6 +20,7 @@ namespace DataLogTester
             InitializeComponent();
            
             pictureBox1.Controls.Add(labelVer);//バージョン表示の背景を透明にするため
+            pictureBox1.Controls.Add(labelTitle);//バージョン表示の背景を透明にするため
             labelVer.Text = "バージョン" + Constants.CheckerSoftVer;
         }
 

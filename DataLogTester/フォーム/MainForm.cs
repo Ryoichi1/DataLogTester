@@ -36,7 +36,10 @@ namespace DataLogTester
         public MainForm()
         {
             InitializeComponent();
-            
+
+            //試験用パラメータのロード
+            State.LoadConfigData();
+
             //Targetクラスに渡す
             通信ログ書き込み = this.SetCommLog;
         }
@@ -50,7 +53,7 @@ namespace DataLogTester
             //IOボードの初期化
             foreach (int i in Enumerable.Range(0, 10))
             {
-                if (General.io.InitEpx64S(0x07) ) break; //0x07→ P7:0 P6:0 P5:0 P4:0 P3:0 P2:1 P1:1 P0:1              
+                if (General.io.InitEpx64S(0x07)) break; //0x07→ P7:0 P6:0 P5:0 P4:0 P3:0 P2:1 P1:1 P0:1              
                 if (i == 9)
                 {
                     MessageBox.Show("IOボード初期化異常\r\n" + "アプリケーションを終了します");
@@ -65,26 +68,26 @@ namespace DataLogTester
             //マルチメータの初期化
             //マルチメータ機種判別（34401 or R6441b）
 
-                if (R6441b.InitR6441b(R6441b.ComNumber.COM1))
+            if (R6441b.InitR6441b(R6441b.ComNumber.COM1))
+            {
+                State.ItemMultimeter = Multimeter.R6441b;
+                labelR6441b.BackColor = Color.MediumSeaGreen;
+            }
+            else
+            {
+                R6441b.ClosePort();
+                if (Agilent34401A.Init34401A(Agilent34401A.ComNumber.COM1))
                 {
-                    State.ItemMultimeter = Multimeter.R6441b;
-                    labelR6441b.BackColor = Color.MediumSeaGreen;
+                    State.ItemMultimeter = Multimeter.AGI34401A;
+                    labelAgi34401a.BackColor = Color.MediumSeaGreen;
                 }
                 else
                 {
-                    R6441b.ClosePort();
-                    if (Agilent34401A.Init34401A(Agilent34401A.ComNumber.COM1))
-                    {
-                        State.ItemMultimeter = Multimeter.AGI34401A;
-                        labelAgi34401a.BackColor = Color.MediumSeaGreen;
-                    }
-                    else
-                    {
-                        MessageBox.Show("マルチメータ初期化異常\r\n" + "アプリケーションを終了します");
-                        Environment.Exit(0);
-                    }
-
+                    MessageBox.Show("マルチメータ初期化異常\r\n" + "アプリケーションを終了します");
+                    Environment.Exit(0);
                 }
+
+            }
 
             //ターゲットの初期化
             Target.InitTarget(() =>
@@ -127,27 +130,22 @@ namespace DataLogTester
             }
 
 
-            //検査用パラメータのロード
-            if (!State.LoadParameter())
-            {
-                MessageBox.Show("パラメータロード異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
 
-            //検査用パラメータのセット
-            if (!State.SetSpec())
-            {
-                MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
+            //TODO: どうする？？
+            ////検査用パラメータのセット
+            //if (!State.SetSpec())
+            //{
+            //    MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
+            //    Environment.Exit(0);
+            //}
 
             //Fdtのイニシャライズ
             FlashDevelopmentToolkit.InitFdt(() =>
             {
                 FlashDevelopmentToolkit.WorkSpacePath = Constants.FdtWorkSpacePath;
                 FlashDevelopmentToolkit.TestFilePath = Constants.TestFirmPath;
-                FlashDevelopmentToolkit.ProductFilePath = Constants.FirmPath + State.FirmName;
-                FlashDevelopmentToolkit.CheckSum = State.FirmSum;
+                FlashDevelopmentToolkit.ProductFilePath = Constants.FirmPath + State.TestSpec.FirmName;
+                FlashDevelopmentToolkit.CheckSum = State.TestSpec.FirmSum;
             });
 
             //Stopwatchオブジェクトを作成する
@@ -185,6 +183,8 @@ namespace DataLogTester
 
             Agilent34401A.ClosePort();
             R6441b.ClosePort();
+
+            State.Save個別データ();
         }
 
         //画像検査枠　イベントいろいろ**********************************************************************************
@@ -248,7 +248,7 @@ namespace DataLogTester
             {
                 ShowWarning();
             }
-            
+
             if (labelMessage.BackColor == Color.WhiteSmoke)
             {
                 labelMessage.BackColor = Color.LightBlue;
@@ -464,7 +464,7 @@ namespace DataLogTester
 
             General.io.OutBit(EPX64S.PORT.P0, EPX64S.BIT.b0, EPX64S.OUT.H);//電源ON
             General.Wait(4500);
-            Target.sendData(Target.PortName.P1_422, "LedCheck");
+            Target.sendData(Target.PortName.P1_422, "LedCheckALL");
             General.Wait(2000);
 
             TEST_LED.GetOffsetPic();
@@ -484,19 +484,21 @@ namespace DataLogTester
             //フォームが必要なくなったところで、Disposeを呼び出す
             cForm.Dispose();
 
-            //検査用パラメータのロード
-            if (!State.LoadParameter())
-            {
-                MessageBox.Show("パラメータロード異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
 
-            //検査用パラメータのセット
-            if (!State.SetSpec())
-            {
-                MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
+            //TODO: カメラ補正したら座標を反映する いちいちconfigファイルをロードしない
+            ////検査用パラメータのロード
+            //if (!State.LoadParameter())
+            //{
+            //    MessageBox.Show("パラメータロード異常\r\n" + "アプリケーションを終了します");
+            //    Environment.Exit(0);
+            //}
+
+            ////検査用パラメータのセット
+            //if (!State.SetSpec())
+            //{
+            //    MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
+            //    Environment.Exit(0);
+            //}
 
 
 
@@ -536,21 +538,6 @@ namespace DataLogTester
             oForm.Dispose();
             this.Refresh();
 
-
-            //検査用パラメータのロード
-            if (!State.LoadParameter())
-            {
-                MessageBox.Show("パラメータロード異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
-
-            //検査用パラメータのセット
-            if (!State.SetSpec())
-            {
-                MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
-
             this.Enabled = true;
 
             //メインフォームの初期化
@@ -561,19 +548,16 @@ namespace DataLogTester
         private void MenuUtility_Reload_Click(object sender, EventArgs e)
         {
 
-            //検査用パラメータのロード
-            if (!State.LoadParameter())
-            {
-                MessageBox.Show("パラメータロード異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
+            //試験用パラメータのロード
+            State.LoadConfigData();
 
-            //検査用パラメータのセット
-            if (!State.SetSpec())
-            {
-                MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
-                Environment.Exit(0);
-            }
+            //TODO: どうする？？
+            ////検査用パラメータのセット
+            //if (!State.SetSpec())
+            //{
+            //    MessageBox.Show("パラメータセット異常\r\n" + "アプリケーションを終了します");
+            //    Environment.Exit(0);
+            //}
 
 
             //メインフォームの初期化
@@ -664,13 +648,14 @@ namespace DataLogTester
             //１文字入力されたら、タイマーを初期化する
             timerTextInput.Stop();
             timerTextInput.Start();
-            foreach (Model m in State.製品型番リスト)
+            foreach (var m in State.TestSpec.SdInfo)
             {
-                if (textBoxModel.Text == m.name)
+                string[] SdInfoArray = m.Split(',');//{DATALOGGING/R,2G}
+                if (textBoxModel.Text == SdInfoArray[0])
                 {
                     timerTextInput.Stop();
                     //検査する型番のSDカード容量をセットする
-                    State.SdMemory = m.memory;
+                    State.SdMemory = SdInfoArray[1];
 
                     製品型式 = true;
                     return;
@@ -819,7 +804,7 @@ namespace DataLogTester
         //フォームのイニシャライズ（フォームロード時）**************************************************************************
         private void InitForm()
         {
-          
+
             //コンボボックスの初期化
             comboBoxOperatorName.Text = "";
             comboBoxTestCase.Text = "";
@@ -844,8 +829,8 @@ namespace DataLogTester
             labelVee.Text = "";
             labelCurrent.Text = "";
             labelRtc.Text = "";
-            labelFirmVer.Text = State.FirmVer;
-            labelFirmSum.Text = State.FirmSum;
+            labelFirmVer.Text = State.TestSpec.FirmVer;
+            labelFirmSum.Text = State.TestSpec.FirmSum;
 
             labelSw1.Text = "SW1";
             labelSw2.Text = "SW2";
@@ -902,7 +887,7 @@ namespace DataLogTester
             //作業者一覧の設定
             comboBoxOperatorName.Items.Clear();
 
-            foreach (string Operator in State.作業者リスト)
+            foreach (string Operator in State.Setting.作業者リスト)
             {
                 comboBoxOperatorName.Items.Add(Operator);
             }
@@ -1392,19 +1377,19 @@ namespace DataLogTester
             {
 
                 case 30://Vcc電圧の規格
-                    labelSpec.Text = "規格値：" + State.VccMin.ToString("F2") + "～" + State.VccMax.ToString("F2") + "(V)";
+                    labelSpec.Text = "規格値：" + State.TestSpec.VccMin.ToString("F2") + "～" + State.TestSpec.VccMax.ToString("F2") + "(V)";
                     break;
 
                 case 40://3.3V電圧の規格
-                    labelSpec.Text = "規格値：" + State.VeeMin.ToString("F2") + "～" + State.VeeMax.ToString("F2") + "(V)";
+                    labelSpec.Text = "規格値：" + State.TestSpec.VeeMin.ToString("F2") + "～" + State.TestSpec.VeeMax.ToString("F2") + "(V)";
                     break;
 
                 case 50://消費電流の規格
-                    labelSpec.Text = "規格値：" + State.CurrMin.ToString("F2") + "～" + State.CurrMax.ToString("F2") + "(A)";
+                    labelSpec.Text = "規格値：" + State.TestSpec.CurrMin.ToString("F2") + "～" + State.TestSpec.CurrMax.ToString("F2") + "(A)";
                     break;
 
                 case 140://リアルタイムクロックの規格
-                    labelSpec.Text = "規格値：" + State.RtcMax.ToString("F2") + "秒以下";
+                    labelSpec.Text = "規格値：" + State.TestSpec.RtcMax.ToString("F2") + "秒以下";
                     break;
 
                 case 160://SW1出荷設定の規格
@@ -1419,7 +1404,7 @@ namespace DataLogTester
                     labelSpec.Text = "規格値：00";
                     break;
                 case 170://製品ソフト書き込みの規格（ファームウェアチェックサム）
-                    labelSpec.Text = "チェックサム：" + State.FirmSum;
+                    labelSpec.Text = "チェックサム：" + State.TestSpec.FirmSum;
                     break;
 
                 default:
@@ -1528,91 +1513,94 @@ namespace DataLogTester
         }
 
         //画像検査パネルの更新
-        private void 画像検査パネル更新()
+        private void 画像検査パネル更新(LedName name)
         {
-            foreach (var prop in TEST_LED.LedPropList)
+            var prop = TEST_LED.LedPropList.Find(l => l.name == name);
+
+            switch (prop.name)
             {
-                switch (prop.name)
-                {
-                    case LedName.TX1:
-                        labelTX1.BackColor = prop.Color;
-                        labelTX1rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelTX1rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.TX2:
-                        labelTX2.BackColor = prop.Color;
-                        labelTX2rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelTX2rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.TX3:
-                        labelTX3.BackColor = prop.Color;
-                        labelTX3rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelTX3rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.TX4:
-                        labelTX4.BackColor = prop.Color;
-                        labelTX4rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelTX4rgb.ForeColor = Color.Red;
-                        break;
+                case LedName.TX1:
+                    labelTX1.BackColor = prop.Color;
+                    labelTX1rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelTX1rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.TX2:
+                    labelTX2.BackColor = prop.Color;
+                    labelTX2rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelTX2rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.TX3:
+                    labelTX3.BackColor = prop.Color;
+                    labelTX3rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelTX3rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.TX4:
+                    labelTX4.BackColor = prop.Color;
+                    labelTX4rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelTX4rgb.ForeColor = Color.Red;
+                    break;
 
-                    case LedName.RX1:
-                        labelRX1.BackColor = prop.Color;
-                        labelRX1rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelRX1rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.RX2:
-                        labelRX2.BackColor = prop.Color;
-                        labelRX2rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelRX2rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.RX3:
-                        labelRX3.BackColor = prop.Color;
-                        labelRX3rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelRX3rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.RX4:
-                        labelRX4.BackColor = prop.Color;
-                        labelRX4rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelRX4rgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.CPU:
-                        labelCPU.BackColor = prop.Color;
-                        labelCPUrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelCPUrgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.VCC:
-                        labelVCC.BackColor = prop.Color;
-                        labelVCCrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelVCCrgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.RUN:
-                        labelRUN.BackColor = prop.Color;
-                        labelRUNrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelRUNrgb.ForeColor = Color.Red;
-                        break;
-                    case LedName.DI:
-                        labelDI.BackColor = prop.Color;
-                        labelDIrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelDIrgb.ForeColor = Color.Red;
-                        break;
+                case LedName.RX1:
+                    labelRX1.BackColor = prop.Color;
+                    labelRX1rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelRX1rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.RX2:
+                    labelRX2.BackColor = prop.Color;
+                    labelRX2rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelRX2rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.RX3:
+                    labelRX3.BackColor = prop.Color;
+                    labelRX3rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelRX3rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.RX4:
+                    labelRX4.BackColor = prop.Color;
+                    labelRX4rgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelRX4rgb.ForeColor = Color.Red;
+                    break;
+                case LedName.CPU:
+                    labelCPU.BackColor = prop.Color;
+                    labelCPUrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelCPUrgb.ForeColor = Color.Red;
+                    break;
+                case LedName.VCC:
+                    labelVCC.BackColor = prop.Color;
+                    labelVCCrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelVCCrgb.ForeColor = Color.Red;
+                    break;
+                case LedName.RUN:
+                    labelRUN.BackColor = prop.Color;
+                    labelRUNrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelRUNrgb.ForeColor = Color.Red;
+                    break;
+                case LedName.DI:
+                    labelDI.BackColor = prop.Color;
+                    labelDIrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelDIrgb.ForeColor = Color.Red;
+                    break;
 
-                    case LedName.DO:
-                        labelDO.BackColor = prop.Color;
-                        labelDOrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
-                        if (!prop.FlagColor) labelDOrgb.ForeColor = Color.Red;
-                        break;
-                }
+                case LedName.DO:
+                    labelDO.BackColor = prop.Color;
+                    labelDOrgb.Text = prop.Red.ToString() + "," + prop.Green.ToString() + "," + prop.Blue.ToString() + "," + prop.H.ToString("F0");
+                    if (!prop.FlagColor) labelDOrgb.ForeColor = Color.Red;
+                    break;
             }
-            // FileStream を開く
-            System.IO.FileStream hStream = new System.IO.FileStream(@"C:\DataLog\画像検査\source.bmp", System.IO.FileMode.Open);
 
-            // FileStream から画像を読み込んで表示
-            pictureBoxDecision.Image = Image.FromStream(hStream);
-            SetPicture(1);
 
-            // FileStream を閉じる (正しくは オブジェクトの破棄を保証する を参照)
-            hStream.Close();
+            if (!TEST_LED.FlagColor || !TEST_LED.FlagOn)
+            {
+                // FileStream を開く
+                System.IO.FileStream hStream = new System.IO.FileStream(@"C:\DataLog\画像検査\source.bmp", System.IO.FileMode.Open);
 
+                // FileStream から画像を読み込んで表示
+                pictureBoxDecision.Image = Image.FromStream(hStream);
+                SetPicture(1);
+
+                // FileStream を閉じる (正しくは オブジェクトの破棄を保証する を参照)
+                hStream.Close();
+            }
 
         }
 
@@ -1668,10 +1656,10 @@ namespace DataLogTester
             //メインループ
             while (true)
             {
-            ReTest:
+                ReTest:
                 State.StepNo = 抽出した試験項目リスト[index].stepNo;
                 State.試験項目 = 抽出した試験項目リスト[index].testCase;
-                State.エラーメッセージ = 抽出した試験項目リスト[index].errorMessage;
+                State.エラーメッセージ = State.試験項目 + "異常";
 
                 SetTestLog();
                 if (General.checkStopButton()) goto TEST_FAIL;
@@ -1694,7 +1682,7 @@ namespace DataLogTester
                             MessageBox.Show("この製品は一度合格しています\r\n合格印が押されているか確認してください", "作業者への警告");
                             goto case 500;
                         }
-                                          
+
                     case 10:    //コネクタ実装チェック
                         General.ResetIo();
                         General.Wait(500);
@@ -1732,7 +1720,7 @@ namespace DataLogTester
 
                         dBuff = 電流電圧チェック.GetDcV();
                         labelVccVol.Text = dBuff.ToString("F2") + "V";
-                        if (dBuff < State.VccMin || dBuff > State.VccMax)
+                        if (dBuff < State.TestSpec.VccMin || dBuff > State.TestSpec.VccMax)
                         {
                             labelVccVol.ForeColor = Color.Red;
                             goto case 500;
@@ -1755,7 +1743,7 @@ namespace DataLogTester
 
                         dBuff = 電流電圧チェック.GetDcV();
                         labelVee.Text = dBuff.ToString("F2") + "V";
-                        if (dBuff < State.VeeMin || dBuff > State.VeeMax)
+                        if (dBuff < State.TestSpec.VeeMin || dBuff > State.TestSpec.VeeMax)
                         {
                             labelVee.ForeColor = Color.Red;
                             goto case 500;
@@ -1775,7 +1763,7 @@ namespace DataLogTester
 
                         dBuff = 電流電圧チェック.GetDcA();
                         labelCurrent.Text = dBuff.ToString("F2") + "mA";
-                        if (dBuff < State.CurrMin || dBuff > State.CurrMax)
+                        if (dBuff < State.TestSpec.CurrMin || dBuff > State.TestSpec.CurrMax)
                         {
                             labelCurrent.ForeColor = Color.Red;
                             goto case 500;
@@ -1875,19 +1863,72 @@ namespace DataLogTester
 
                         if (checkBoxTestCase.Checked || Flags.RetryFlag)
                         {
-                            SetPicture(0); 
-                            
+                            SetPicture(0);
+
                             //USB-シリアル変換機に接続
                             if (!General.電源投入時の処理()) goto case 500;
                         }
 
-                        //LED全点灯にするため、K4をONする
-                        General.io.OutBit(EPX64S.PORT.P0, EPX64S.BIT.b3, EPX64S.OUT.H);
-                        General.Wait(500);
 
-                        if (!TEST_LED.CheckLed(画像検査パネル更新)) goto case 500;
+
+                        foreach (var name in Enum.GetValues(typeof(LedName)))
+                        {
+                            var strName = name.ToString();
+                            var testName = (LedName)name;
+
+                            if (testName == LedName.DI || testName == LedName.DO)
+                            {
+                                //すべてのLEDを点灯させるためにはK4をONする必要がある
+                                General.io.OutBit(EPX64S.PORT.P0, EPX64S.BIT.b3, EPX64S.OUT.H);
+                                General.Wait(200);
+                            }
+                            else
+                            {
+                                //すべてのLEDを点灯させるためにはK4をONする必要がある
+                                General.io.OutBit(EPX64S.PORT.P0, EPX64S.BIT.b3, EPX64S.OUT.L);
+                                General.Wait(200);
+                            }
+
+
+                            try
+                            {
+                                textBoxTestLog.Text += "\r\n";
+                                textBoxTestLog.Text += strName + " ﾁｪｯｸ";
+                                textBoxTestLog.Select(0, 0);//テキスト全選択回避のため
+                                this.Refresh();
+                                if (TEST_LED.CheckLed(testName))
+                                {
+                                    textBoxTestLog.Text += "---PASS";
+                                    General.Wait(1000);
+                                }
+                                else
+                                {
+                                    textBoxTestLog.Text += "\r\n";
+                                    if (!TEST_LED.FlagColor)
+                                    {
+                                        textBoxTestLog.Text += "--カラー異常";
+                                    }
+                                    else
+                                    {
+                                        textBoxTestLog.Text += "--点灯異常";
+                                    }
+                                    textBoxTestLog.Select(0, 0);//テキスト全選択回避のため
+                                    this.Refresh();
+                                    goto case 500;
+                                }
+                            }
+                            finally
+                            {
+                                画像検査パネル更新(testName);
+                            }
+
+                        }
+
+
+                        //検査終わったらライブ画像に戻す（これいる？？） TODO:
                         General.Wait(1000);
                         SetPicture(0);
+
                         retryCnt = 0;
                         break;
 
@@ -2051,7 +2092,7 @@ namespace DataLogTester
                         }
                         labelRtc.Text = dBuff.ToString();
 
-                        if (dBuff > State.RtcMax)
+                        if (dBuff > State.TestSpec.RtcMax)
                         {
                             labelRtc.ForeColor = Color.Red;
                             goto case 500;
@@ -2076,7 +2117,7 @@ namespace DataLogTester
                             General.PlaySound2(Constants.NoticeSound);//
 
                             //プレスがあくまで待つ
-                            for (; ; )
+                            for (;;)
                             {
                                 Application.DoEvents();
                                 if (General.checkStopButton()) goto case 500;
@@ -2087,13 +2128,13 @@ namespace DataLogTester
                             labelMessage.Refresh();
 
                             //プレスが閉まるまで待つ
-                            for (; ; )
+                            for (;;)
                             {
                                 Application.DoEvents();
                                 if (General.checkStopButton()) goto case 500;
                                 if (General.CheckPress()) break;
                             }
-                            
+
                             General.Wait(500);
                             if (!General.電源投入時の処理()) goto case 500;
                             if (!TEST_スイッチ.CheckS1(SwMode.奇数On, SetSwDisplay, SetCommLog)) goto case 500;
@@ -2107,7 +2148,7 @@ namespace DataLogTester
                         General.PlaySound2(Constants.NoticeSound);
 
                         //プレスがあくまで待つ
-                        for (; ; )
+                        for (;;)
                         {
                             Application.DoEvents();
                             if (General.checkStopButton()) goto case 500;
@@ -2118,13 +2159,13 @@ namespace DataLogTester
                         labelMessage.Refresh();
 
                         //プレスが閉まるまで待つ
-                        for (; ; )
+                        for (;;)
                         {
                             Application.DoEvents();
                             if (General.checkStopButton()) goto case 500;
                             if (General.CheckPress()) break;
                         }
-                            
+
                         General.Wait(500);
                         if (!General.電源投入時の処理()) goto case 500;
 
@@ -2138,7 +2179,7 @@ namespace DataLogTester
                         General.PlaySound2(Constants.NoticeSound);
 
                         //プレスがあくまで待つ
-                        for (; ; )
+                        for (;;)
                         {
                             Application.DoEvents();
                             if (General.checkStopButton()) goto case 500;
@@ -2149,7 +2190,7 @@ namespace DataLogTester
                         labelMessage.Refresh();
 
                         //プレスが閉まるまで待つ
-                        for (; ; )
+                        for (;;)
                         {
                             Application.DoEvents();
                             if (General.checkStopButton()) goto case 500;
@@ -2164,7 +2205,7 @@ namespace DataLogTester
                         retryCnt = 0;
                         break;
 
-   
+
 
                     case 160:    //スイッチ出荷設定の確認(SW1の出荷設定確認"F")
 
@@ -2268,7 +2309,7 @@ namespace DataLogTester
                         {
                             General.ResetIo();
                         }
-                        
+
                         //重複試験チェック、ＳＤカードチェック、リアルタイムクロックでＮＧ、停止ボタンを押した場合はリトライしない
                         if (State.StepNo == 0 || State.StepNo == 20 || State.StepNo == 170 ||
                             State.StepNo == 100 || State.StepNo == 150 || Flags.StopFlag)
@@ -2276,7 +2317,7 @@ namespace DataLogTester
                             goto TEST_FAIL;
                         }
 
-                        if (++retryCnt < 4)
+                        if (++retryCnt < Constants.RetryCount)
                         {
                             iBuff = State.StepNo % 10;
                             index -= iBuff;
@@ -2353,10 +2394,10 @@ namespace DataLogTester
                     labelVCCrgb.Text,
                     labelDIrgb.Text,
                     labelDOrgb.Text,
-                    State.VccMin.ToString("F2") + "～" + State.VccMax.ToString("F2"),
-                    State.VeeMin.ToString("F2") + "～" + State.VeeMax.ToString("F2"),
-                    State.CurrMin.ToString("F2") + "～" + State.CurrMax.ToString("F2"),
-                    State.RtcMax.ToString("F2")
+                    State.TestSpec.VccMin.ToString("F2") + "～" + State.TestSpec.VccMax.ToString("F2"),
+                    State.TestSpec.VeeMin.ToString("F2") + "～" + State.TestSpec.VeeMax.ToString("F2"),
+                    State.TestSpec.CurrMin.ToString("F2") + "～" + State.TestSpec.CurrMax.ToString("F2"),
+                    State.TestSpec.RtcMax.ToString("F2")
                 };
 
                 if (!General.SaveData(Data))
@@ -2388,7 +2429,7 @@ namespace DataLogTester
             return;
 
 
-        TEST_FAIL://試験不合格時の処理
+            TEST_FAIL://試験不合格時の処理
 
             //音鳴らして終了
             General.PlaySound2(Constants.FailSound);
@@ -2424,7 +2465,7 @@ namespace DataLogTester
             // 不要になった時点で破棄する (正しくは オブジェクトの破棄を保証する を参照)
             warForm.Dispose();
             this.Refresh();
-            this.Enabled = true;       
+            this.Enabled = true;
         }
 
 

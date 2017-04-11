@@ -31,6 +31,7 @@
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SplashForm));
             this.labelVer = new System.Windows.Forms.Label();
             this.pictureBox1 = new System.Windows.Forms.PictureBox();
+            this.labelTitle = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.pictureBox1)).BeginInit();
             this.SuspendLayout();
             // 
@@ -40,7 +41,7 @@
             this.labelVer.BackColor = System.Drawing.Color.Transparent;
             this.labelVer.Font = new System.Drawing.Font("メイリオ", 12F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
             this.labelVer.ForeColor = System.Drawing.SystemColors.ButtonFace;
-            this.labelVer.Location = new System.Drawing.Point(261, 260);
+            this.labelVer.Location = new System.Drawing.Point(54, 111);
             this.labelVer.Name = "labelVer";
             this.labelVer.Size = new System.Drawing.Size(72, 24);
             this.labelVer.TabIndex = 1;
@@ -56,11 +57,23 @@
             this.pictureBox1.TabIndex = 2;
             this.pictureBox1.TabStop = false;
             // 
+            // labelTitle
+            // 
+            this.labelTitle.BackColor = System.Drawing.Color.Transparent;
+            this.labelTitle.Font = new System.Drawing.Font("メイリオ", 18F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(128)));
+            this.labelTitle.ForeColor = System.Drawing.Color.White;
+            this.labelTitle.Location = new System.Drawing.Point(12, 64);
+            this.labelTitle.Name = "labelTitle";
+            this.labelTitle.Size = new System.Drawing.Size(332, 37);
+            this.labelTitle.TabIndex = 3;
+            this.labelTitle.Text = "DATA LOGGING CHECKER";
+            // 
             // SplashForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(487, 283);
+            this.Controls.Add(this.labelTitle);
             this.Controls.Add(this.labelVer);
             this.Controls.Add(this.pictureBox1);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.None;
@@ -78,5 +91,6 @@
 
         private System.Windows.Forms.Label labelVer;
         private System.Windows.Forms.PictureBox pictureBox1;
+        private System.Windows.Forms.Label labelTitle;
     }
 }

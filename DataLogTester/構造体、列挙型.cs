@@ -14,15 +14,16 @@ namespace DataLogTester
     {
         public int stepNo;          //ステップ№
         public string testCase;     //検査項目
-        public string errorMessage; //検査項目に対するエラーメッセージ
+
+        public TestProperty(int stepNo, string testCase)
+        {
+            this.stepNo = stepNo;
+            this.testCase = testCase;
+
+        }
     }
 
-    //製品型番用構造体
-    public struct Model
-    {
-        public string name;         //製品型式
-        public string memory;       //製品型式に対するSDカードの容量
-    }
+
 
 
     //*******************************************************************************

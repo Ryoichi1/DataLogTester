@@ -22,9 +22,18 @@ namespace DataLogTester
                                                         //LED色判定をrgb平均からhsvのH平均に変更
         //public const string CheckerSoftVer = "1.50"; //2014.9.18 試験合格品を再試験できないように変更（QK対策）
         //public const string CheckerSoftVer = "1.60"; //2014.11.13 立ち上げ時に再試験禁止の警告画面表示を追加（QK対策）
-        public const string CheckerSoftVer = "1.70"; //2015.3.19 マルチメータを34401AとR6441B両方に対応（フォームロード時に自動で検出）
+        //public const string CheckerSoftVer = "1.70"; //2015.3.19 マルチメータを34401AとR6441B両方に対応（フォームロード時に自動で検出）
+        public const string CheckerSoftVer = "2.00"; //2017.4.10 神田のせいでマイコンショート不良が出たので、LEDチェック方法を全点灯チェック→１ケつづチェックに変更、
+                                                     //S1も同様に全部ON・OFFチェック→ １ビットづつON・OFFチェックに変更
+
+
+        public static readonly string filePath_Configuration = @"ConfigData\Configuration.config";
+        public static readonly string filePath_TestSpec = @"ConfigData\TestSpec.config";
+        public static readonly string filePath_Cam0Property = @"ConfigData\Cam0Property.config";
+
+
         //音声データのパス
-        public const string WavDataPath = @"C:\DataLog\検査ソフト\Host\Wav\";
+        public const string WavDataPath = @"Wav\";
         public const string PassSound = WavDataPath + "Pass.wav";
         public const string FailSound = WavDataPath + "Fail.wav";
         public const string NoticeSound = WavDataPath + "Notice.wav";
@@ -43,7 +52,7 @@ namespace DataLogTester
         public const string AllOffSound = WavDataPath + "AllOff.wav";
 
         //画像データのパス
-        public const string BmpDataPath = @"C:\DataLog\検査ソフト\Host\Bmp\";
+        public const string BmpDataPath = @"Bmp\";
         public const string DipOffPic = BmpDataPath + "DipOff.bmp";
         public const string DipOnPic = BmpDataPath + "DipOn.bmp";
 
@@ -65,8 +74,6 @@ namespace DataLogTester
         public const string SePic = BmpDataPath + "Se.bmp";
         public const string SfPic = BmpDataPath + "Sf.bmp";
 
-        //パラメータファイルのパス
-        public const string ParameterFilePath = @"C:\DataLog\検査ソフト\Host\parameter.ods";
         //オフセット用画像ファイルのパス
         public const string OffsetPictureFilePath = @"C:\DataLog\画像検査\OffsetSample.BMP";
         //検査データファイルのパス
@@ -74,7 +81,7 @@ namespace DataLogTester
         //製品ソフトウェア保存フォルダのパス
         public const string FirmPath = @"C:\DataLog\製品Firmware\";
         //試験用ソフトウェア（Target）のファイルパス
-        public const string TestFirmPath = @"C:\DataLog\検査ソフト\Target\sdfunc07.mot";
+        public const string TestFirmPath = @"C:\DataLog\検査ソフト\Target\sdfunc09.mot";
         //FDTワークスペースのありか
         public const string FdtWorkSpacePath = @"C:\DataLog\FirmWriter\FirmWriter.AWS";
 
@@ -94,6 +101,8 @@ namespace DataLogTester
         public const int LedThreshold2 = 230;     //LED(DI)検査時の閾値(20*20 = 400ピクセルのうち300ピクセルが白だったら合格)
         //リアルタイムクロック検査時にターゲットに設定する初期値
         public const string DefaultTime = "/13/01/01/01/01/00";
+
+        public const int RetryCount = 3;
 
 
     
